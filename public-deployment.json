@@ -1,0 +1,12 @@
+{
+  "network": "Ethereum Sepolia",
+  "chainId": 11155111,
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "factoryAddress": "0xB0d7df25aB3Bffa280dAf0e9Aa7083aF5a29ffa0",
+  "deploymentBlock": 11877397,
+  "deploymentTransaction": "0xfaf586eddec7ea35041c06dcbf85040d7c96d210925f28a14aa07925371cbe37",
+  "publicUrl": "https://sc6113-crowdfunding-dapp-i3ho.onrender.com",
+  "repositoryUrl": "https://github.com/aokamutidao/sc6113-crowdfunding-dapp",
+  "renderServiceId": "srv-db4e183ncjis73cmra10",
+  "validation": "Factory receipt and bytecode match; Render Live, frontend and API verified. Public campaign lifecycle not tested."
+}

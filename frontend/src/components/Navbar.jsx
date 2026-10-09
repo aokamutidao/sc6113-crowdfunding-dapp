@@ -30,7 +30,7 @@ const Navbar = () => {
           {isConnected ? (
             <div style={styles.walletInfo}>
               <div style={styles.balance}>
-                💰 {parseFloat(balance).toFixed(4)} ETH
+                {balance === null ? 'Balance unavailable' : `💰 ${parseFloat(balance).toFixed(4)} ETH`}
               </div>
               <div style={styles.account}>
                 📍 {formatAddress(account)}

@@ -27,6 +27,12 @@ export const readableError = (error) => {
     return 'Transaction or wallet request rejected. No funds were sent.';
   }
   if (error?.code === 'INSUFFICIENT_FUNDS') return 'Insufficient ETH for the amount and transaction gas.';
+  if (error?.shortMessage === 'could not coalesce error') {
+    const nested = error?.info?.error || error?.error;
+    if (nested?.code === -32002) return 'A wallet request is already open. Complete it in MetaMask before trying again.';
+    if (nested?.code === 4902) return 'The requested network is not configured in MetaMask.';
+    return 'MetaMask could not complete the request. Check its selected network and RPC, then reconnect.';
+  }
   return error?.reason || error?.shortMessage || error?.message || 'Request failed. Please try again.';
 };
 

@@ -4,6 +4,7 @@ import { CONTRACTS } from '../config/contractConfig';
 import FactoryABI from '../config/CrowdfundingFactory.json';
 import ProjectABI from '../config/CrowdfundingProject.json';
 import { readableError } from '../utils/blockchain';
+import { readWalletSession } from '../utils/walletSession';
 
 const WalletContext = createContext();
 const HISTORY_KEY = 'crowdfunding.transactions.v1';
@@ -26,6 +27,7 @@ export const WalletProvider = ({ children }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
   const connectedRef = useRef(false);
+  const sessionGeneration = useRef(0);
   const [transactions, setTransactions] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -42,6 +44,7 @@ export const WalletProvider = ({ children }) => {
   }, [transactions]);
 
   const disconnectWallet = useCallback(() => {
+    sessionGeneration.current++;
     connectedRef.current = false;
     setAccount(null);
     setBalance('0');
@@ -55,19 +58,17 @@ export const WalletProvider = ({ children }) => {
   // Account changes must refresh the signer as well as the displayed address.
   const initializeWallet = useCallback(async (accounts) => {
     if (!accounts.length) { disconnectWallet(); return; }
-    const walletProvider = new ethers.BrowserProvider(window.ethereum);
-    const walletSigner = await walletProvider.getSigner(accounts[0]);
-    const [balanceWei, network] = await Promise.all([
-      walletProvider.getBalance(accounts[0]), walletProvider.getNetwork(),
-    ]);
+    const generation = ++sessionGeneration.current;
+    const session = await readWalletSession(window.ethereum, accounts, CONTRACTS.network.chainId);
+    if (generation !== sessionGeneration.current) return;
     connectedRef.current = true;
-    setAccount(ethers.getAddress(accounts[0]));
-    setBalance(ethers.formatEther(balanceWei));
-    setChainId(network.chainId.toString());
-    setProvider(walletProvider);
-    setSigner(walletSigner);
-    setFactoryContract(new ethers.Contract(CONTRACTS.factory, FactoryABI.abi, walletSigner));
-    setError(null);
+    setAccount(session.account);
+    setBalance(session.balance);
+    setChainId(session.chainId);
+    setProvider(session.provider);
+    setSigner(session.signer);
+    setFactoryContract(session.signer ? new ethers.Contract(CONTRACTS.factory, FactoryABI.abi, session.signer) : null);
+    setError(session.balanceError);
   }, [disconnectWallet]);
 
   const connectWallet = async () => {
@@ -107,15 +108,17 @@ export const WalletProvider = ({ children }) => {
   }, [readProvider]);
 
   const getProjectContract = async (address) => {
-    if (!signer) throw new Error('Please connect your wallet first.');
+    if (!account) throw new Error('Please connect your wallet first.');
     if (!isCorrectNetwork) throw new Error(`Switch your wallet to ${CONTRACTS.network.name} before sending a transaction.`);
+    if (!signer) throw new Error('Reconnect your wallet to authorize transactions.');
     if (!ethers.isAddress(address)) throw new Error('Invalid project contract address.');
     return new ethers.Contract(address, ProjectABI.abi, signer);
   };
 
   const executeTransaction = async (label, send, projectAddress = null) => {
-    if (!signer) throw new Error('Please connect your wallet first.');
+    if (!account) throw new Error('Please connect your wallet first.');
     if (!isCorrectNetwork) throw new Error(`Switch your wallet to ${CONTRACTS.network.name} before sending a transaction.`);
+    if (!signer) throw new Error('Reconnect your wallet to authorize transactions.');
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const record = { id, label, account, chainId, projectAddress, createdAt: Date.now(), status: 'awaiting signature' };
     setTransactions((previous) => [record, ...previous].slice(0, 100));

@@ -2,7 +2,15 @@
 
 This financial DApp lets a creator open an ETH crowdfunding campaign, supporters contribute to a contract-held escrow, and users inspect funding progress and transaction history. After the deadline, the creator can withdraw if the funding target was reached. Otherwise, each supporter requests their own refund through `refund()`. Refunds are **manual pull payments**, not automatic transfers.
 
-The source includes the Solidity contracts, a React web interface, and a Node.js/Express backend with a rebuildable SQLite cache. The default configuration is **Hardhat Local, chain ID 31337**. The submission includes automated evidence from an isolated local chain and a separate manual MetaMask session on the local chain at `http://127.0.0.1:8545`. It does not establish a Sepolia deployment, Etherscan verification, or public hosting.
+The source includes Solidity contracts, React and a Node.js/Express backend with a rebuildable SQLite cache. Local defaults use **Hardhat Local, chain ID 31337**. The public Render build uses **Ethereum Sepolia, chain ID 11155111**. Local tests cover the complete financial lifecycle; a separate MetaMask signed Sepolia factory deployment and public UI/API checks are also verified. Public campaign creation, contribution, payout and refund have not been tested. Etherscan source verification is not claimed.
+
+- Live application: https://sc6113-crowdfunding-dapp-i3ho.onrender.com
+- Source repository: https://github.com/aokamutidao/sc6113-crowdfunding-dapp
+- Public API health: https://sc6113-crowdfunding-dapp-i3ho.onrender.com/health
+- Sepolia factory: `0xB0d7df25aB3Bffa280dAf0e9Aa7083aF5a29ffa0`, deployment block `11877397`
+- Deployment receipt: https://sepolia.etherscan.io/tx/0xfaf586eddec7ea35041c06dcbf85040d7c96d210925f28a14aa07925371cbe37
+
+The public factory is separate from the local chain, so local example campaigns do not appear on the public homepage. Render was verified Live and `/health` returned `blockchainSync: true`. The factory runtime bytecode and deployment input match the compiled Solidity artifact.
 
 ## Implementation
 
@@ -96,7 +104,7 @@ Open the URL printed by Vite, normally `http://localhost:5173`. Restart Vite aft
 
 The user manually verified the actual MetaMask extension connection and approved creation of **MetaMask Student Learning Fund**. The six user-supplied screenshots numbered `09`–`14` show the connection request, connected account, creation form, transaction approval, created campaign and confirmed transaction history. Independent RPC verification records chain ID `31337`, successful receipt status `1`, block `3` and transaction `0x1b276db6e36795bd81a6cb35834ffed87c3df693b01abb8741f000c9969ea913` in `evidence/metamask-verification.json`. The wallet approval screenshot displays the inconsistent custom network name **GoChain Testnet**; the verified transaction belongs to the local Hardhat chain, not the public GoChain testnet. Screenshots `01`–`08` remain automated EIP-1193 bridge evidence and must not be described as actual MetaMask screenshots.
 
-## Optional Sepolia configuration
+## Public Sepolia and Render deployment
 
 ### Render: one public URL for the web app and API
 
@@ -112,7 +120,7 @@ Create a Web Service using this repository and configure:
 - `FACTORY_CONTRACT_ADDRESS`: the actual deployed factory address
 - `FACTORY_DEPLOYMENT_BLOCK`: the actual deployment receipt's block number
 
-The build sets Sepolia chain ID `11155111`, uses `/api` for the browser's API requests, and compiles the factory ABI. Private keys are not needed on Render. Free instances can sleep after inactivity and lose their SQLite cache on restart; startup rebuilds that cache from the configured chain. Blockchain data remains authoritative. The public URL will be documented after deployment and verification.
+The build sets Sepolia chain ID `11155111`, uses `/api` for browser API requests and compiles the factory ABI. Private keys are not needed on Render. Free instances can sleep after inactivity and lose their SQLite cache on restart; startup rebuilds that cache from the configured chain. Blockchain data remains authoritative. The deployed service is https://sc6113-crowdfunding-dapp-i3ho.onrender.com; its service ID is `srv-db4e183ncjis73cmra10`.
 
 For deployment through the existing MetaMask wallet without exporting a private key, run `npm run compile`, then `node scripts/prepare-wallet-deployment.js`, start the frontend development server, and open `http://localhost:5173/deploy-factory.html` in the browser containing MetaMask. Connect to Sepolia, approve a factory deployment using test ETH, and record its address, transaction hash and block number. This generated helper is local only and is excluded from Git.
 
@@ -122,7 +130,7 @@ Sepolia is the testnet recommended in the assignment. To run there, obtain a Sep
 npm run deploy:sepolia
 ```
 
-Configure the backend with the same RPC URL, factory address and actual deployment block. Set the frontend's `VITE_CHAIN_ID=0xaa36a7`, `VITE_NETWORK_NAME=Sepolia Testnet`, `VITE_RPC_URL`, `VITE_FACTORY_ADDRESS` and `VITE_BLOCK_EXPLORER=https://sepolia.etherscan.io`; then restart the frontend. `ETHERSCAN_API_KEY` enables the deployment script's verification attempt. Treat verification as successful only if the command reports success. No public deployment is included in the present evidence.
+Configure the backend with the same RPC URL, factory address and actual deployment block. Set the frontend's `VITE_CHAIN_ID=0xaa36a7`, `VITE_NETWORK_NAME=Sepolia Testnet`, `VITE_RPC_URL`, `VITE_FACTORY_ADDRESS` and `VITE_BLOCK_EXPLORER=https://sepolia.etherscan.io`; then restart the frontend. `ETHERSCAN_API_KEY` enables the deployment script's verification attempt. Treat source verification as successful only if that command reports success. The actual submitted public deployment used MetaMask and the generated local helper rather than a private-key environment variable.
 
 Never put a private key in a `VITE_` variable, frontend code, screenshots, or a submitted source archive. Only the root deployment configuration uses `PRIVATE_KEY`; user transactions are signed by the user's wallet.
 
@@ -144,7 +152,7 @@ Representative transaction gas, measured with compiler 0.8.26 and optimizer 200:
 
 Gas varies with inputs and contract state. These values are local transaction gas measurements, not a public-network fee quote. The full command output is included in the submission's `evidence/contract-tests.txt`. `contracts/test/PaymentReceiver.sol` is an adversarial test fixture and is not deployed by the application deployment script.
 
-Backend checks run from `backend` with `npm test`; the submitted backend suite has 15 passing checks. Frontend checks run from `frontend` with `npm run lint` and `npm run build`; both completed successfully, with zero lint warnings. The production bundle emitted a size warning at approximately 696.58 kB minified (215.37 kB gzip), which remains a performance limitation. The submitted evidence records the checks that were actually performed; the source archive does not claim that a clean internet-connected installation was tested.
+Backend checks run from `backend` with `npm test`; the suite has **18 passing checks**, including SPA deep links, RPC content security policy and production readiness. Before running it on a clean checkout, compile the root contracts and run `npm ci && npm run build` in `frontend` so the compiled artifacts and SPA HTML exist. Frontend lint and build pass with zero lint warnings. The Render bundle emitted a size warning at approximately 696.61 kB minified (215.40 kB gzip). A separate clean source copy successfully installed dependencies, compiled Solidity and built the public frontend. Public HTTP checks verify health, projects, invalid input, API 404, SPA deep links and compiled Sepolia configuration.
 
 The `scripts/prepare-evidence.js` utility seeds a **fresh, isolated** Hardhat chain with example active, successful and failed campaigns. Its default RPC is `http://127.0.0.1:18545`, and it refuses a chain whose block number is not zero. It uses unlocked local test accounts and local time control. Do not use it on an existing application chain. Its receipts and screenshots describe the automated local run; the separate manual MetaMask run is documented in `evidence/metamask-verification.json` and screenshots `09`–`14`. Neither run establishes public-chain deployment.
 
@@ -181,10 +189,12 @@ frontend/package-lock.json Frontend dependency lockfile
 
 The submission contains `SC6113_Final_Report.pdf`, `source_code.zip`, `screenshots.zip`, the combined `113_submission.zip`, and supporting execution evidence. The source archive excludes `.env`, `node_modules` and the pre-existing user database. `sample-data/evidence.sqlite` is a snapshot from the new local evidence run, not a live ledger. A fresh chain must be deployed and synchronized; the snapshot cannot recreate blockchain state. The latest assignment requirements explicitly state that no video recording is needed.
 
-The complete assignment text allows Flask **or** Node.js, and this implementation uses Node.js. The course portal's separate inline submission text mentions **python flask** and a **render link**. The Flask wording requires clarification with the instructor; no Flask backend is included. A public Render deployment link is still missing and must be completed if that portal requirement applies. The current local application URL is not a public deployment link.
+The complete assignment text allows Flask **or** Node.js, and this implementation uses Node.js. The portal's separate inline text mentions **python flask** and a **render link**. The public Render link is supplied above and in the report. The Flask wording remains a clarification for the instructor; no Flask backend is included or claimed.
 
 ## Limitations
 
 This is a course prototype without an independent security audit, emergency pause, upgrade mechanism or milestone-based spending controls. Contract authorization protects who can withdraw, but cannot prove that a creator spends funds as promised. Wallet addresses, amounts, campaign text and updates are public on the blockchain. String limits are measured in UTF-8 bytes, and categories are required to be nonempty rather than restricted to the suggested list. Full-array reads and on-chain text become costly at scale. API sync endpoints need additional access control and rate limits before public operation; the SQLite cache and browser-local history are not independent financial ledgers.
+
+The backend production dependency audit reports unresolved advisories in SQLite installation tooling and Sequelize dependencies. Dependency upgrades and review are needed before any real financial use. The hosted service is a course prototype using valueless Sepolia test ETH.
 
 License: MIT, as declared in the package metadata.
