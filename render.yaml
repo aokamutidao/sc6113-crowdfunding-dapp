@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: sc6113-crowdfunding-dapp
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build:render
+    startCommand: npm start --prefix backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.11.1
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: REQUIRE_BLOCKCHAIN_SYNC
+        value: "true"
+      - key: RPC_URL
+        sync: false
+      - key: FACTORY_CONTRACT_ADDRESS
+        sync: false
+      - key: FACTORY_DEPLOYMENT_BLOCK
+        sync: false

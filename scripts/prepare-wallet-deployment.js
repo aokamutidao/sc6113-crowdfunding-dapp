@@ -1,0 +1,19 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const artifact = require(path.join(root, 'artifacts/contracts/CrowdfundingFactory.sol/CrowdfundingFactory.json'));
+const target = path.join(root, 'frontend/deploy-factory.html');
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SC6113 Sepolia Deployment</title>
+<style>body{background:#f1f5f9;color:#172033;font:17px system-ui;margin:50px auto;max-width:850px;padding:24px}main{background:white;padding:36px;border-radius:18px}button{background:#2563eb;color:white;border:0;padding:14px 20px;border-radius:8px;font:inherit;cursor:pointer}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f9;padding:20px;border-radius:8px}p{line-height:1.6}</style></head><body><main>
+<h1>SC6113 Crowdfunding — Sepolia Deployment</h1><p>Deploy the compiled CrowdfundingFactory using MetaMask on Ethereum Sepolia (chain ID 11155111). This uses test ETH only. Your wallet signs the transaction; this page never receives your private key.</p>
+<button id="connect">Connect MetaMask and switch to Sepolia</button> <button id="deploy" disabled>Deploy factory with test ETH</button><pre id="result">Ready. Connect your test wallet.</pre>
+<script type="module">
+import { BrowserProvider, ContractFactory, formatEther } from 'ethers';
+const artifact = ${JSON.stringify({abi:artifact.abi,bytecode:artifact.bytecode})};
+const result=document.querySelector('#result');const connect=document.querySelector('#connect');const deploy=document.querySelector('#deploy');let signer;
+const show=(value)=>{result.textContent=typeof value==='string'?value:JSON.stringify(value,null,2)};
+connect.onclick=async()=>{connect.disabled=true;try{if(!window.ethereum)throw new Error('MetaMask is not available in this browser.');await window.ethereum.request({method:'eth_requestAccounts'});await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0xaa36a7'}]});const provider=new BrowserProvider(window.ethereum);if((await provider.getNetwork()).chainId!==11155111n)throw new Error('Sepolia network required');signer=await provider.getSigner();const address=await signer.getAddress();const factory=new ContractFactory(artifact.abi,artifact.bytecode,signer);const gas=await signer.estimateGas(await factory.getDeployTransaction());show({network:'Ethereum Sepolia',chainId:11155111,address,balanceTestETH:formatEther(await provider.getBalance(address)),estimatedDeploymentGas:gas.toString()});deploy.disabled=false;}catch(e){show(e.shortMessage||e.message)}finally{connect.disabled=false}};
+deploy.onclick=async()=>{deploy.disabled=true;try{if((await signer.provider.getNetwork()).chainId!==11155111n)throw new Error('Sepolia network required');show('Approve the factory deployment in MetaMask.');const contract=await new ContractFactory(artifact.abi,artifact.bytecode,signer).deploy();const tx=contract.deploymentTransaction();show('Deployment submitted. Waiting for confirmation…\\nTransaction: '+tx.hash);const receipt=await tx.wait();if(receipt.status!==1)throw new Error('Deployment reverted');const data={network:'sepolia',chainId:11155111,factoryAddress:await contract.getAddress(),deployer:await signer.getAddress(),transactionHash:receipt.hash,blockNumber:receipt.blockNumber,status:receipt.status,gasUsed:receipt.gasUsed.toString(),rpcUrl:'https://ethereum-sepolia-rpc.publicnode.com'};localStorage.setItem('sc6113.sepolia.deployment',JSON.stringify(data));show(data);}catch(e){show(e.shortMessage||e.message);deploy.disabled=false}};
+</script></main></body></html>`;
+fs.writeFileSync(target, html);
+console.log('Local-only MetaMask deployment page prepared: http://localhost:5173/deploy-factory.html');

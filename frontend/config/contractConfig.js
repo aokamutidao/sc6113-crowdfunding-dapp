@@ -1,0 +1,57 @@
+// 合约配置
+// 部署后需要更新这些地址
+
+export const CONTRACTS = {
+  // Sepolia测试网部署地址（示例）
+  factory: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // 本地Hardhat地址，部署后更新
+
+  // 区块链网络配置
+  network: {
+    chainId: '0x7A69', // 31337 (Hardhat本地网络)
+    name: 'Hardhat Local',
+    rpcUrl: 'http://127.0.0.1:8545',
+    blockExplorer: null,
+  },
+
+  // Sepolia测试网配置（部署后使用）
+  // network: {
+  //   chainId: '0xaa36a7', // 11155111
+  //   name: 'Sepolia Testnet',
+  //   rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
+  //   blockExplorer: 'https://sepolia.etherscan.io',
+  // },
+};
+
+// 项目分类
+export const CATEGORIES = [
+  'Technology',
+  'Education',
+  'Charity',
+  'Art',
+  'Environment',
+  'Health',
+  'Business',
+  'Other',
+];
+
+// 项目状态映射
+export const PROJECT_STATUS = {
+  0: 'Active',
+  1: 'Successful',
+  2: 'Failed',
+  3: 'FundsWithdrawn',
+};
+
+// 项目状态颜色
+export const STATUS_COLORS = {
+  Active: '#3b82f6',      // blue
+  Successful: '#10b981',  // green
+  Failed: '#ef4444',      // red
+  FundsWithdrawn: '#6b7280', // gray
+};
+
+// API配置
+export const API_CONFIG = {
+  baseUrl: 'http://localhost:3000/api',
+  timeout: 10000,
+};
